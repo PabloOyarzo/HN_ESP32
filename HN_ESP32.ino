@@ -23,8 +23,12 @@ int endTitle[20] = {0};
 
 char tittles [20][150] = {0};
 
-unsigned long lastTimeEnter = 0;
-const int interval = 5*60*100; // 100ms*60sec*5min
+unsigned long lastTimeEnter_WebQuery = 0;
+unsigned long lastTimeEnter_DisplayTittle = 0;
+const int interval_WebQuery = 5*60*1000; // 5min*60sec*1000ms
+const int interval_DisplayTittle = 20*1000; // 20sec*1000ms
+
+int displayTitle_Counter = 0;
 
 /////// Display Settings ///////
 // FILL HERE WITH MODE TYPES
@@ -92,7 +96,7 @@ int searchTitles(String *payload){
 }
 
 
-
+/*
 void displayTitle(String *payload){
     for(int i = 0; i < 20; i++){
           Heltec.display->clear();
@@ -108,17 +112,26 @@ void displayTitle(String *payload){
     }
 }
 
+*/
+
+void displayTitle_Char(int x){
+    Heltec.display->clear();
+    Heltec.display->drawStringMaxWidth(0, 0, 128, tittles[x]);
+    Heltec.display->display();
+}
+
+
 void loop() {
 
     // Updating Uptime
     unsigned long upTime = millis();
 
     // waits 5min to do search again
-    if(upTime - lastTimeEnter > interval || enterFirst == 0) {
+    if(upTime - lastTimeEnter_WebQuery > interval_WebQuery || enterFirst == 0) {
       if (enterFirst == 0){
           enterFirst = 1;
       }
-      lastTimeEnter = upTime;
+      lastTimeEnter_WebQuery = upTime;
       if((wifiMulti.run() == WL_CONNECTED)) {
 
           HTTPClient http;
@@ -133,7 +146,7 @@ void loop() {
           if(httpCode == HTTP_CODE_OK) {
               String payload = http.getString();
               searchTitles(&payload);
-              displayTitle(&payload);
+              //displayTitle(&payload);
           } else {
               Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
           }
@@ -142,5 +155,17 @@ void loop() {
       }
 
     }
-    delay(10000);
+
+    //actually displaying the tittle
+    if(upTime - lastTimeEnter_DisplayTittle > interval_DisplayTittle && enterFirst == 1) {
+      lastTimeEnter_DisplayTittle = upTime;
+
+      displayTitle_Char(displayTitle_Counter);
+      displayTitle_Counter++;
+
+
+      if (displayTitle_Counter == 20){
+          displayTitle_Counter = 0;
+      }
+    }
 }
